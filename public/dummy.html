@@ -1,0 +1,35 @@
+<html>
+    <head>
+        <title>sadasd
+        </title>
+        
+        <body>asdasd
+        </body>
+         <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+        <script>
+            var socket = io();
+            socket.on('init',function(data){
+           
+                 console.log("data started");
+                socket.emit('updatePlayer',{x:"heloo"});
+       
+             
+        });
+        socket.on('serverUpdate',function(data){
+                
+                console.log("I am here ");
+            socket.emit('updatePlayer',{x:"heloo"});
+            })
+        
+        
+        
+        
+         
+       
+                    
+            
+            
+        </script>    
+        
+    </head>
+</html>    

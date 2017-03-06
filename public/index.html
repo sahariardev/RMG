@@ -1,0 +1,268 @@
+<html>
+    <head>
+        <title>Game 01</title>
+    </head>
+    
+    <body>
+    </body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.js"></script>
+    <script src="javascripts/phaser.js">
+    </script>
+    
+    <script src="javascripts/person.js">
+    </script>
+    <script>
+        
+        var game;
+        var socket = io();
+        var playerid;
+        var flag=false;
+        
+     
+            
+        game=new Phaser.Game(800,600,Phaser.AUTO);
+        var gameState={
+            
+            preload:preload,create:create,update:update,render: render
+            
+            
+        }
+        game.state.add('GameState',gameState);
+        game.state.start('GameState');    
+        
+         var playerarr={};   
+            
+       socket.on('serverUpdate',function(data){
+           
+         
+           
+           
+           playerarr=data.player;
+          
+       });
+        socket.on('brushFire',function(data){
+            
+           console.log("Brush fire");
+            allbullet=data.bullet;
+            
+        });
+        
+        
+        
+    
+            
+            
+      
+        
+        
+        var groundLayer;
+        var bg;// Background
+        var map;// Tile map
+        var facing = 'left';
+        var jumpTimer = 0;
+        var fireTimer=0;
+        var cursors;
+        var jumpButton;
+        var player2;
+        var pg;
+        var gun;
+        var playerB;
+        var player;// player
+        var plr;
+        var players={};
+        var str="My Ground Layer";
+        var gun;
+        var body;
+        var leg1;
+        var leg2;
+        var face;
+        var group;
+        var head;
+        var facingleft=false;
+        var hand;
+        var hand2;
+        var blt;
+        var fire;
+        var debug;
+        var bulletx;
+        var bullety;
+        var bulletangle;
+        var left;
+        var right;
+        var arr={};
+        var allbullet={};
+        
+
+         
+         
+        function preload()
+        {
+            game.load.image('BG','images/BG.png');
+            game.load.tilemap('map_01','images/tilemaps01.json',null,Phaser.Tilemap.TILED_JSON);
+            game.load.image('tile','images/GAMESPRITESHEET.png');
+            game.load.spritesheet('dude', 'images/dude.png', 32, 48);
+            game.load.image('gun','images/gun2.png');
+            game.load.image('bullet','images/bullet.png');
+            game.load.image('head','images/head.png');
+            game.load.image('body','images/body.png');
+            game.load.image('leg','images/leg.png');
+            game.load.image('hand','images/hand.png')
+            
+            
+            
+        }
+        
+        function create()
+        {
+            game.physics.startSystem(Phaser.Physics.ARCADE);
+            bg=game.add.sprite(0,0,'BG');
+            bg.fixedToCamera = true;
+            map=game.add.tilemap('map_01');
+            
+            map.addTilesetImage('GAMESPRITESHEET','tile');
+             
+            map.setCollisionByExclusion([]);
+            
+            groundLayer=map.createLayer('Tile Layer 1');//this always needs to be in this way 
+            groundLayer.resizeWorld();
+            game.physics.arcade.gravity.y = 250;
+            //player
+             
+            
+            
+            
+            plr=new person(game);
+            
+            plr.createplayer();
+            game.camera.follow(plr.player);
+            plr.player.alpha=0;
+            plr.createcomponents();
+            blt=plr.initbullet();
+            
+            
+           
+            
+             cursors = game.input.keyboard.createCursorKeys();
+             jumpButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+            
+             firebtn= game.input.activePointer.leftButton;
+             left=game.input.keyboard.addKey(Phaser.Keyboard.A);
+             right=game.input.keyboard.addKey(Phaser.Keyboard.D);     
+            
+     
+       
+   
+            
+            
+            
+           
+
+           
+        }
+        
+      
+        
+        function update()
+        {
+              
+                plr.player.body.velocity.x = 0;
+                plr.attachcomponentswithplayer();
+                plr.bulletxy();   
+                plr.controlmovement();
+
+       
+            game.physics.arcade.collide(plr.player,groundLayer);
+           
+            
+            
+            for(var i in playerarr)
+                {
+                    if(typeof players[playerarr[i].id] === 'undefined'  )
+                        {
+                            if(playerarr[i].id != socket.id)
+                                {
+                                   
+                                    players[playerarr[i].id]=new person(game);
+                                    players[playerarr[i].id].createplayer();
+                                    players[playerarr[i].id].player.alpha=0;
+                                     players[playerarr[i].id].createcomponents();
+                                    game.physics.arcade.collide(players[playerarr[i].id].player,groundLayer);
+                                }
+                            
+                        }
+                      else{
+                          if(playerarr[i].id != socket.id)
+                                {
+                                    players[playerarr[i].id].resetplayer(playerarr[i].x,playerarr[i].y,playerarr[i].left,playerarr[i].gunrotation);
+                                    game.physics.arcade.collide(players[playerarr[i].id].player,groundLayer);
+                                }
+                          
+                          
+                          
+                      }     
+                }
+            
+            
+            for(var i in allbullet)
+                {
+                    if(allbullet[i].id != socket.id)
+                        {
+                            console.log("lolz");
+                            plr.brushFire(blt,allbullet[i].x,allbullet[i].y,allbullet[i].angle,allbullet[i].id);
+                        }
+                    
+                    
+                }
+           
+            if(firebtn.isDown && game.time.now > fireTimer)
+                {
+                    var bp= plr.fire(blt);
+                    console.log("here");
+                    fireTimer = game.time.now + 400;
+                    socket.emit('fire',{x:bp.x,y:bp.y,angle:bp.angle,id:socket.id});
+                    
+                    
+                    
+                    
+                }
+            
+        if (cursors.left.isDown || left.isDown )
+            {
+                plr.player.body.velocity.x = -200;
+                            
+                
+            }
+            else if (cursors.right.isDown  || right.isDown)
+            {
+                
+               plr.player.body.velocity.x = 200;
+
+    }
+    
+    if (jumpButton.isDown && plr.player.body.onFloor() && game.time.now > jumpTimer)
+        {
+            plr.player.body.velocity.y = -400;
+            jumpTimer = game.time.now + 750;
+        }
+            
+       
+            
+            
+            
+         socket.emit('updatePlayer',{x:plr.player.x,y:plr.player.y,id:socket.id,left:plr.facingleft,gunrotation:plr.gun.rotation})   
+            
+    }
+    
+        function render () {
+
+     game.debug.text(game.time.physicsElapsed, 32, 32);
+         //game.debug.body(plr.player);
+            
+           
+     game.debug.bodyInfo(plr.player, 16, 24);
+
+}
+        
+    </script>    
+    
+</html>
